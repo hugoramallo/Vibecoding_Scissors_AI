@@ -1,5 +1,5 @@
 import { FilesetResolver, HandLandmarker, HandLandmarkerResult } from '@mediapipe/tasks-vision';
-import { Gesture, Landmark } from '../types';
+import { Gesture, Landmark, GestureResult } from '../types';
 
 let handLandmarker: HandLandmarker | null = null;
 
@@ -20,17 +20,19 @@ export const initializeHandLandmarker = async (): Promise<void> => {
   });
 };
 
-export const detectGestureFromVideo = (video: HTMLVideoElement, timestamp: number): Gesture => {
-  if (!handLandmarker) return Gesture.UNKNOWN;
+export const detectGestureFromVideo = (video: HTMLVideoElement, timestamp: number): GestureResult => {
+  if (!handLandmarker) return { gesture: Gesture.UNKNOWN, landmarks: [] };
 
   const result: HandLandmarkerResult = handLandmarker.detectForVideo(video, timestamp);
 
   if (!result.landmarks || result.landmarks.length === 0) {
-    return Gesture.NONE;
+    return { gesture: Gesture.NONE, landmarks: [] };
   }
 
   const landmarks = result.landmarks[0] as Landmark[]; // First detected hand
-  return classifyGesture(landmarks);
+  const gesture = classifyGesture(landmarks);
+  
+  return { gesture, landmarks };
 };
 
 // Simple heuristic gesture classifier
@@ -53,9 +55,6 @@ const classifyGesture = (landmarks: Landmark[]): Gesture => {
   const isMiddleOpen = isFingerOpen(12, 10);
   const isRingOpen = isFingerOpen(16, 14);
   const isPinkyOpen = isFingerOpen(20, 18);
-  
-  // Thumb is tricky, let's check if it's extended to the side roughly
-  // For RPS simple logic, we mostly care about the 4 fingers.
   
   // Rock: All fingers closed (except maybe thumb)
   if (!isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen) {

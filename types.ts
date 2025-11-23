@@ -26,3 +26,8 @@ export interface Landmark {
   y: number;
   z: number;
 }
+
+export interface GestureResult {
+  gesture: Gesture;
+  landmarks: Landmark[];
+}
